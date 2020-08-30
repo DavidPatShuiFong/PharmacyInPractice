@@ -49,11 +49,18 @@ pharmacist_contacts <- pharmacist_contacts %>%
 
 ## types of visits
 
+The billings numbers, and frequencies, listed in declining order.
+
 ```{r}
 summary(active_patient_billings$MBSItem)
 ```
 
 ## Patient in clinic on same day as pharmacist
+
+`clinicVisits` - number of times patient physically came to the clinic
+`pharmacistExposure` - number of times patient physically came to the clinic on the day the pharmacist was present.
+
+`DirectContact` - TRUE/FALSE - pharmacist contacted patient either in surgery or via telephone.
 
 ```{r}
 physical_visit_MBSItem <- c("23", "36", "3", "44", "10997", "721", "723", "732", "2713", "2715", "73806", "16500", "707", "705", "2517", "2521", "2525", "703", "30071", "2501", "2504")
@@ -69,7 +76,7 @@ active_patient_inClinic <- active_patient_billings %>%
 # pharmacistDay is TRUE is patient came to clinic physically AND
 #  pharmacist was present on the same day
 
-# first day of pharmacist visit was 2019-12-02 (2nd February 2020)
+# first day of pharmacist visit was 2019-12-02 (2nd December 2019)
 
 ClinicExposure_df <- active_patient_inClinic %>%
   group_by(InternalID) %>%
@@ -93,7 +100,7 @@ active_patient_exposure <- active_patient %>%
   replace_na(list(DirectContact = FALSE))
 ```
 
-## Billing densities - 9 months before and after
+## Billing counts - during 9 month period before and 9 month period after
 
 ```{r}
 active_patient_billings_period <- list()
@@ -104,6 +111,8 @@ active_patient_billings_period[[2]] <- active_patient_billings %>%
   filter(ServiceDate >= (as.Date("2019-12-02")),
          ServiceDate < (as.Date("2019-12-02") + months(9)))
 ```
+
+Group into `Standard`, `CDM`, `HA`, `DMMR`, `Conference`, `Nurse`
 
 ```{r}
 active_patient_billings_counts <- lapply(
@@ -123,11 +132,17 @@ active_patient_billings_counts <- lapply(
                 Conference = sum(MBSItem %in% c("735", "739", "743",
                                                 "747", "750", "758")),
                 Nurse = sum(MBSItem %in% c("10997", "93201", "93203"))) %>%
-      
       ungroup()
   }
 )
 ```
+
+also calculate `Total` and calculate 'deltas' (for use in difference-in-difference as an 'outcome' variable).
+
+'delta' calculated by subtracting 'first' period from 'second' period data.
+
+The second period included an extensive lock-down period and reduced service access due to a coronavirus pandemic.
+
 ```{r}
 active_patient_delta <- active_patient_exposure %>%
   left_join(active_patient_billings_counts[[1]] %>%
