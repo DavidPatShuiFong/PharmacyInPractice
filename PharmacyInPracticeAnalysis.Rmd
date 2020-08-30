@@ -12,6 +12,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r warning=FALSE, message=FALSE}
 library(magrittr)
 library(dplyr)
+library(tidyr)
+library(lubridate)
 ```
 
 ## read in data
@@ -22,8 +24,26 @@ active_patient <- read.csv("active_patient.csv")
 active_patient_billings <- read.csv("active_patient_billings.csv")
 pharmacist_contacts <- read.csv("LauraDeanVisits.csv")
 
-active_patient_billings$MBSItem <- factor(active_patient_billings$MBSItem)
+active_patient <- active_patient %>%
+  mutate(
+    InternalID = factor(InternalID)
+  )
+
+active_patient_billings <- active_patient_billings %>%
+  mutate(
+    InternalID = factor(InternalID),
+    MBSItem = factor(MBSItem),
+    ServiceDate = as.Date(ServiceDate)
+  )
 # these are not truly numeric values, they are actually 'categoricals'
+
+pharmacist_contacts <- pharmacist_contacts %>%
+  mutate(
+    InternalID = factor(InternalID),
+    VisitType = factor(VisitType),
+    VisitDate = as.Date(VisitDate)
+  )
+
 ```
 
 ## types of visits
@@ -32,9 +52,106 @@ active_patient_billings$MBSItem <- factor(active_patient_billings$MBSItem)
 summary(active_patient_billings$MBSItem)
 ```
 
+## Patient in clinic on same day as pharmacist
+
 ```{r}
 physical_visit_MBSItem <- c("23", "36", "3", "44", "10997", "721", "723", "732", "2713", "2715", "73806", "16500", "707", "705", "2517", "2521", "2525", "703", "30071", "2501", "2504")
 
-active_patient_billings <- active_patient_billings %>%
-  mutate(physicalVisit = MBSItem %in% physical_visit_MBSItem)
+pharmacist_dates <- read.csv("LauraDeanDays.csv") %>% pull(Date) %>% as.Date()
+
+active_patient_inClinic <- active_patient_billings %>%
+  mutate(physicalVisit = MBSItem %in% physical_visit_MBSItem) %>%
+  group_by(InternalID, ServiceDate) %>% # group items on the same day/patient together
+  summarise(ClinicVisit = any(physicalVisit)) %>%
+  ungroup() %>%
+  mutate(pharmacistDay = ClinicVisit & ServiceDate %in% pharmacist_dates)
+# pharmacistDay is TRUE is patient came to clinic physically AND
+#  pharmacist was present on the same day
+
+# first day of pharmacist visit was 2019-12-02 (2nd February 2020)
+
+ClinicExposure_df <- active_patient_inClinic %>%
+  group_by(InternalID) %>%
+  summarise(pharmacistExposure = sum(pharmacistDay)) %>%
+  ungroup()
+
+DirectContact_df <- pharmacist_contacts %>%
+  group_by(InternalID) %>%
+  summarise(DirectContact = any(VisitType %in% c("Surgery", "Telephone"))) %>%
+  ungroup()
+
 ```
+
+### exposure table
+
+```{r}
+active_patient_exposure <- active_patient %>%
+  left_join(ClinicExposure_df, by = "InternalID") %>%
+  left_join(DirectContact_df, by = "InternalID") %>%
+  replace_na(list(DirectContact = FALSE))
+```
+
+## Billing densities - 9 months before and after
+
+```{r}
+active_patient_billings_period <- list()
+active_patient_billings_period[[1]] <- active_patient_billings %>% 
+  filter(ServiceDate >= (as.Date("2019-12-02") - months(9)),
+         ServiceDate < (as.Date("2019-12-02")))
+active_patient_billings_period[[2]] <- active_patient_billings %>%
+  filter(ServiceDate >= (as.Date("2019-12-02")),
+         ServiceDate < (as.Date("2019-12-02") + months(9)))
+```
+
+```{r}
+active_patient_billings_counts <- lapply(
+  active_patient_billings_period,
+  function(x) {
+    # count the number of times each billing category occurred in each 9 month period
+    x %>%
+      group_by(InternalID) %>%
+      summarise(Standard = sum(MBSItem %in% c("3", "23", "36", "44", "2713",
+                                              "91790", "91800", "91801", "91802", "92115",
+                                              "91795", "91809", "91810", "91811", "92127")),
+                CDM = sum(MBSItem %in% c("721", "723", "732",
+                                         "92024", "92025", "92071",
+                                         "92068", "92069", "92072")),
+                HA = sum(MBSItem %in% c("701", "703", "705", "707")),
+                DMMR = sum(MBSItem %in% c("900")),
+                Nurse = sum(MBSItem %in% c("10997", "93201", "93203"))) %>%
+      
+      ungroup()
+  }
+)
+```
+```{r}
+active_patient_delta <- active_patient_exposure %>%
+  left_join(active_patient_billings_counts[[1]] %>%
+              rename(Standard1 = Standard,
+                     CDM1 = CDM,
+                     HA1 = HA,
+                     DMMR1 = DMMR,
+                     Nurse1 = Nurse),
+            by = "InternalID") %>%
+  left_join(active_patient_billings_counts[[2]] %>%
+              rename(Standard2 = Standard,
+                     CDM2 = CDM,
+                     HA2 = HA,
+                     DMMR2 = DMMR,
+                     Nurse2 = Nurse),
+            by = "InternalID") %>%
+  replace_na(list(Standard1 = 0, Standard2 = 0,
+                  CDM1 = 0, CDM2 = 0,
+                  HA1 = 0, HA2 = 0,
+                  DMMR1 = 0, DMMR2 = 0,
+                  Nurse1 = 0, Nurse2 = 0)) %>%
+  filter((Standard1 + CDM1 + HA1 + DMMR1 + Nurse1) > 0,
+         (Standard2 + CDM2 + HA2 + DMMR2 + Nurse2) > 0) %>%
+  # only patients who *at least once* was billed in period 1 AND period 2
+  mutate(StandardDelta = Standard2 - Standard1,
+         CDMDelta = CDM2 - CDM1,
+         HADelta = HA2 - HA1,
+         DMMRDelta = DMMR2 - DMMR1,
+         NurseDelta = Nurse2 - Nurse1)
+```
+
