@@ -1,0 +1,40 @@
+---
+title: "PharmacyInPracticeAnalysis"
+author: "David Fong"
+date: "30/08/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r warning=FALSE, message=FALSE}
+library(magrittr)
+library(dplyr)
+```
+
+## read in data
+
+
+```{r}
+active_patient <- read.csv("active_patient.csv")
+active_patient_billings <- read.csv("active_patient_billings.csv")
+pharmacist_contacts <- read.csv("LauraDeanVisits.csv")
+
+active_patient_billings$MBSItem <- factor(active_patient_billings$MBSItem)
+# these are not truly numeric values, they are actually 'categoricals'
+```
+
+## types of visits
+
+```{r}
+summary(active_patient_billings$MBSItem)
+```
+
+```{r}
+physical_visit_MBSItem <- c("23", "36", "3", "44", "10997", "721", "723", "732", "2713", "2715", "73806", "16500", "707", "705", "2517", "2521", "2525", "703", "30071", "2501", "2504")
+
+active_patient_billings <- active_patient_billings %>%
+  mutate(physicalVisit = MBSItem %in% physical_visit_MBSItem)
+```

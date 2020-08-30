@@ -1,0 +1,58 @@
+---
+title: "PharmacyInPractice"
+author: "David Fong"
+date: "27 August 2020"
+output: html_document
+---
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(pipeR)
+library(dplyr)
+# setwd("C:/Users/david.fong/AppData/Local/Programs/GPstat/")
+# source("dist/script/R/run.R")
+```
+
+## R 
+
+```{r}
+a <- dMeasure::dMeasure$new()
+a$open_emr_db()
+```
+
+## active patients
+
+```{r}
+kensington_clinicians <- a$UserConfig %>>%
+  filter(
+    grepl(
+      "Kensington",
+      purrr::map_chr(Location, function(x) paste(x, collapse = ", "))
+      # map_chr will create a 'collapsed' version of all the
+      # listed locations
+    )
+  )
+
+active_patient <- a$list_contact_count(
+  date_from = as.Date("2017-10-01"), date_to = as.Date("2019-09-30"),
+  clinicians = kensington_clinicians$Fullname,
+  min_contact = 3,
+  contact_type = "Services",
+  lazy = FALSE, store = FALSE
+)
+
+active_patient_ID <- active_patient %>>% dplyr::pull(InternalID)
+
+active_patient_billings <- a$db$services %>>%
+  filter(
+    InternalID %in% active_patient_ID,
+    ServiceDate >= as.Date("2017-10-01")
+  ) %>>% dplyr::collect()
+```
+
+```{r}
+LauraDeanVisits <- a$db$visits %>% filter(DrName == "Laura Dean")
+# InternalID, VisitType, VisitDate, UserID, DrName
+```
+
