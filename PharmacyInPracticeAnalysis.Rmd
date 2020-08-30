@@ -11,9 +11,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r warning=FALSE, message=FALSE}
 library(magrittr)
-library(dplyr)
+library(dplyr)     # data pliers
 library(tidyr)
 library(lubridate)
+library(lme4)      # glmer
 ```
 
 ## read in data
@@ -72,7 +73,8 @@ active_patient_inClinic <- active_patient_billings %>%
 
 ClinicExposure_df <- active_patient_inClinic %>%
   group_by(InternalID) %>%
-  summarise(pharmacistExposure = sum(pharmacistDay)) %>%
+  summarise(clinicVisits = sum(ClinicVisit),
+            pharmacistExposure = sum(pharmacistDay)) %>%
   ungroup()
 
 DirectContact_df <- pharmacist_contacts %>%
@@ -118,6 +120,8 @@ active_patient_billings_counts <- lapply(
                                          "92068", "92069", "92072")),
                 HA = sum(MBSItem %in% c("701", "703", "705", "707")),
                 DMMR = sum(MBSItem %in% c("900")),
+                Conference = sum(MBSItem %in% c("735", "739", "743",
+                                                "747", "750", "758")),
                 Nurse = sum(MBSItem %in% c("10997", "93201", "93203"))) %>%
       
       ungroup()
@@ -131,6 +135,7 @@ active_patient_delta <- active_patient_exposure %>%
                      CDM1 = CDM,
                      HA1 = HA,
                      DMMR1 = DMMR,
+                     Conference1 = Conference,
                      Nurse1 = Nurse),
             by = "InternalID") %>%
   left_join(active_patient_billings_counts[[2]] %>%
@@ -138,20 +143,67 @@ active_patient_delta <- active_patient_exposure %>%
                      CDM2 = CDM,
                      HA2 = HA,
                      DMMR2 = DMMR,
+                     Conference2 = Conference,
                      Nurse2 = Nurse),
             by = "InternalID") %>%
   replace_na(list(Standard1 = 0, Standard2 = 0,
                   CDM1 = 0, CDM2 = 0,
                   HA1 = 0, HA2 = 0,
                   DMMR1 = 0, DMMR2 = 0,
+                  Conference1 = 0, Conference2 = 0,
                   Nurse1 = 0, Nurse2 = 0)) %>%
-  filter((Standard1 + CDM1 + HA1 + DMMR1 + Nurse1) > 0,
-         (Standard2 + CDM2 + HA2 + DMMR2 + Nurse2) > 0) %>%
+  mutate(Total1 = Standard1 + CDM1 + HA1 + DMMR1 + Conference1 + Nurse1,
+         Total2 = Standard2 + CDM2 + HA2 + DMMR2 + Conference2 + Nurse2) %>%
+  filter(Total1 > 0,
+         Total2 > 0) %>%
   # only patients who *at least once* was billed in period 1 AND period 2
   mutate(StandardDelta = Standard2 - Standard1,
          CDMDelta = CDM2 - CDM1,
          HADelta = HA2 - HA1,
          DMMRDelta = DMMR2 - DMMR1,
-         NurseDelta = Nurse2 - Nurse1)
+         ConferenceDelta = Conference2 - Conference1,
+         NurseDelta = Nurse2 - Nurse1,
+         TotalDelta = Total2 - Total1)
 ```
 
+## Predictions
+
+```{r}
+TotalGLM <- lmer(
+  TotalDelta ~ pharmacistExposure + DirectContact + pharmacistExposure*DirectContact + (1 | clinicVisits),
+  data = active_patient_delta
+)
+summary(TotalGLM)
+```
+
+```{r}
+StandardGLM <- lmer(
+  StandardDelta ~ pharmacistExposure + DirectContact + pharmacistExposure*DirectContact + (1 | clinicVisits),
+  data = active_patient_delta
+)
+summary(StandardGLM)
+```
+
+
+```{r}
+NurseGLM <- lmer(
+  NurseDelta ~ pharmacistExposure + DirectContact + pharmacistExposure*DirectContact + (1 | clinicVisits),
+  data = active_patient_delta
+)
+summary(NurseGLM)
+```
+```{r}
+ConferenceGLM <- lmer(
+  ConferenceDelta ~ pharmacistExposure + DirectContact + pharmacistExposure*DirectContact + (1 | clinicVisits),
+  data = active_patient_delta
+)
+summary(ConferenceGLM)
+```
+
+```{r}
+DMMRGLM <- lmer(
+  DMMRDelta ~ pharmacistExposure + DirectContact + pharmacistExposure*DirectContact + (1 | clinicVisits),
+  data = active_patient_delta
+)
+summary(DMMRGLM)
+```
