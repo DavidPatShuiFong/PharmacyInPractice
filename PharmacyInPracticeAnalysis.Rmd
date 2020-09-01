@@ -2,6 +2,15 @@
 title: "Pharmacy In Practice"
 author: "David Fong"
 date: "30/08/2020"
+abstract: "Pharmacists in general practice are expected to improve medication
+  efficacy and reduce medication complications and adverse effects. In order
+  for pharmacists in practice to be sustainable, practice revenue needs to be
+  taken into consideration. In this short study, conducted during a period of
+  considerable practice and societal upheaval due to a coronavirus outbreak,
+  a pharmacist in practice was able to reduce the overall medication count (-0.52
+  per patient) and increase the billings ('standard' +1.1, 'nursing' +0.19,
+  'case conference' +0.05 and 'medication review' +0.1) of patients the
+  pharmacist contacted."
 output:
   bookdown::html_document2:
     toc: true
@@ -10,12 +19,47 @@ output:
     code_folding: hide
 ---
 
+# Introduction
+
+General practice involves a significant, and ever increasing, number of medical
+therapeutics, often prescribed to patients with increasing age and co-morbidities.
+At the coHealth Kensington site, many patients also come from a background
+with reduced English communication ability and overall health literacy, often
+having been displaced from another country and having moved to Australia at
+a mature age. coHealth Kensington is located close to areas with a high density
+of public housing, sees patients who are homeless or at risk of homeless. The site
+also provides mental health support, and has a hsigh proportion of patients with
+mental health conditions, including low-frequency disorders such as schizophrenia.
+
+This is on the background of a local population which is ageing along with the
+general Australian community.
+
+The pharmacy in practice program, provided by the Primary Health Network, supported
+the placement of an 'in-house' pharmacist at the Kensington site for several days
+a week. The pharmacist started at the Kensington site on 2nd December 2019.
+
+A pharmacist in practice is expected to improve medication efficacy (through
+appropriate use, simplification and patient education) and reduce medication
+complications (through simplification, reduced misunderstanding and review of
+potential medication interactions and contra-indications). For a pharmacist
+in practice to be sustainable, practice revenue needs to be taken into
+consideration.
+
+This evaluation examines whether contacts by the pharmacist with patients reduced
+overall medication counts (as listed in the electronic medical record) and 
+contributed to the billings/finances of the practice.
+
+The evaluation is complicated by the effects of a coronavirus outbreak throughout
+much of 2020, which severely curtailed the number of patients who physically
+came to the clinic site and overall changed the way the practice operated.
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r warning=FALSE, message=FALSE}
 library(readxl)    # read Excel spreadsheets (with gritted teeth...)
+library(summarytools)
 library(magrittr)
 library(dplyr)     # data pliers
 library(tidyr)
@@ -23,6 +67,7 @@ library(lubridate)
 library(ggplot2)   # plotting
 library(cowplot)   # side-by-side plot
 library(lme4)      # glmer
+library(sjPlot)    # regression table display
 ```
 
 # Sources of measurement
@@ -70,7 +115,11 @@ medication_count <- list()
 medication_count[[1]] <- read_excel(
   "PenCSMedicationCount20191201.xlsx", sheet = "ReidentifyReport",
   skip = 3) %>%
-  select(ID, `Med. Count`) %>%
+  mutate(DOB = as.Date(substr(`D.O.B (Age)`, 1, 10), format = "%d/%m/%Y"),
+         Sex = factor(Sex)) %>%
+  # age was not a generally useful predictor on testing
+  #  it does help predict CDM and HA, but had no effect on results
+  select(ID, `Med. Count`, Sex) %>%
   rename(InternalID = ID, MedCount = `Med. Count`) %>%
   mutate(InternalID = factor(InternalID), MedCount = as.numeric(MedCount))
 medication_count[[2]] <- read_excel(
@@ -297,12 +346,25 @@ Period 1 - 12 month period prior to 2nd December 2019
 
 Period 2 - 9 month period after and including 2nd December 2019
 
-```{r}
-summary(active_patient_delta %>% 
-          select(clinicVisit1, clinicVisit2))
+```{r warning=FALSE, message=FALSE, results="asis"}
+descr(active_patient_delta %>% 
+        select(clinicVisit1, clinicVisit2),
+      stats = c("mean", "sd", "min", "q1", "med", "q3", "max"),
+      style = "rmarkdown", headings = FALSE
+)
 ```
 
-## Total billings (of select categories) and 'standard' billings
+## Billings (of select categories) 
+
+### 'Total' billings (of all selected categories)
+
+```{r warning=FALSE, message=FALSE, results="asis"}
+descr(active_patient_delta %>%
+          select(Total1, Total2),
+      stats = c("mean", "sd", "min", "q1", "med", "q3", "max"),
+      style = "rmarkdown", headings = FALSE
+)
+```
 
 ### 'Standard' billings 
 
@@ -310,29 +372,155 @@ summary(active_patient_delta %>%
 * Period 1 - 12 month period prior to 2nd December 2019
 * Period 2 - 9 month period after and including 2nd December 2019
 
-```{r}
-summary(active_patient_delta %>%
-          select(Total1, Total2, Standard1, Standard2))
-
+```{r warning=FALSE, message=FALSE, results="asis"}
+descr(active_patient_delta %>%
+          select(Standard1, Standard2),
+      stats = c("mean", "sd", "min", "q1", "med", "q3", "max"),
+      style = "rmarkdown", headings = FALSE
+)
 ```
 
-## Other categories
+### Other categories
 
 * Chronic Disease Management, Nurse (10997), Medication Review (DMMR), Case Conference and Health Assessment (HA) billings
 * Period 1 - 12 month period prior to 2nd December 2019
 * Period 2 - 9 month period after and including 2nd December 2019
 
-```{r}
-summary(active_patient_delta %>%
-         select(CDM1, CDM2, Nurse1, Nurse2))
+```{r warning=FALSE, message=FALSE, results="asis"}
+descr(active_patient_delta %>%
+         select(CDM1, CDM2, Nurse1, Nurse2),
+      stats = c("mean", "sd", "min", "q1", "med", "q3", "max"),
+      style = "rmarkdown", headings = FALSE
+)
 ```
 
-```{r}
-summary(active_patient_delta %>%
-          select(DMMR1, DMMR2, Conference1, Conference2, HA1, HA2))
+
+```{r warning=FALSE, message=FALSE, results="asis"}
+descr(active_patient_delta %>%
+          select(DMMR1, DMMR2, Conference1, Conference2, HA1, HA2),
+      stats = c("mean", "sd", "min", "q1", "med", "q3", "max"),
+      style = "rmarkdown", headings = FALSE
+)
 ```
 
 # Estimations
+
+The overall approach is a 'difference-in-difference' estimation.
+
+* compare the medication count and billings of patients in the time period
+when the pharmacist was working at the Kensington site (time period `2`),
+with the same patients who were also seen at the clinic prior to the pharmacist
+commencing (time period `1`).
+* `Sex` is also a (weak) predictor, and is included in the baseline model. 
+* Some, but not all, of these same patients were *also* were contacted by the
+pharmacist, either in person or by telephone.
+
+### Analysis method
+
+The choice of baseline model is described in Appendix \@ref(baselinemodel).
+
+Subsequent analysis will be aimed at determining whether contact by the practice
+pharmacist influenced medications counts and billings in patients. The analysis
+will be determine whether contact by the pharmacist explains any of the 'variance'
+not explained in the 'baseline model' described in Appendix \@ref(baselinemodel).
+
+## Medication count
+
+Contact by the pharmacist with a patient is strongly related to reduction in
+medication count (95% confidence interval -0.81 to -0.20, $p=0.001$).
+
+```{r}
+MedCountGLM <- lm(
+  MedCountDelta ~ DirectContact + clinicVisit1 + clinicVisit2 + Sex,
+  data = active_patient_delta
+)
+tab_model(MedCountGLM)
+```
+
+## Total Billings and contact with pharmacist
+
+Contact by the pharmacist with a patient is strongly related to additional Medicare
+billings in the selected categories (95% confidence interval 0.65 to 1.76 additional
+billings per patient, $p<0.001$).
+
+```{r}
+TotalGLM <- lm(
+  TotalDelta ~ DirectContact + clinicVisit1 + clinicVisit2 + Sex,
+  data = active_patient_delta
+)
+tab_model(TotalGLM)
+```
+
+## 'Standard' billings and contact with the pharmacist
+
+Contact by the pharmacist with a patient is strongly related to additional 'standard'
+Medicare item number billings (95% confidence interval 0.62 to 1.55 additional billings
+per patient, $p<0.001$)
+
+```{r}
+StandardGLM <- lm(
+  StandardDelta ~ DirectContact + clinicVisit1 + clinicVisit2 + Sex,
+  data = active_patient_delta
+)
+tab_model(StandardGLM)
+```
+
+## Nurse provision of services related to chronic disease management
+
+Contact by the pharmacist with a patient is weakly related to additional nurse
+chronic disease management item number billings (95% confidence interval -0.02
+to 0.40, $p=0.081$).
+
+```{r}
+NurseGLM <- lm(
+  NurseDelta ~ DirectContact + clinicVisit1 + clinicVisit2 + Sex,
+  data = active_patient_delta
+)
+tab_model(NurseGLM)
+```
+
+## Case conference item numbers
+
+Contact by the pharmacist with a patient is related to additional case conference
+item number claims (95% confidence interval 0.00 to 0.11, $p=0.045$).
+
+```{r}
+ConferenceGLM <- lm(
+  ConferenceDelta ~ DirectContact + clinicVisit1 + clinicVisit2 + Sex,
+  data = active_patient_delta
+)
+tab_model(ConferenceGLM)
+```
+
+## Domiciliary 'Home' medication reviews
+
+Contact by a pharmacist with a patient is strongly related to home medication review
+claims (95% confidence interval 0.07 to 0.12, $p<0.001$)
+
+```{r}
+DMMRGLM <- lm(
+  DMMRDelta ~ DirectContact + clinicVisit1 + clinicVisit2 + Sex,
+  data = active_patient_delta
+)
+tab_model(DMMRGLM)
+```
+
+# (APPENDIX) Appendix {-}
+
+# Appendix A - Baseline model {#baselinemodel}
+
+The baseline model estimates the number of billings (in select categories) a patient
+will have in the second period (after 2nd December 2020) based on the billings in
+the first period (prior to 2nd December 2020). The model bases the prediction on
+the number of times the patient visits the practice in-person (i.e. not telehealth
+or telephone consult).
+
+Visits to the practice are used as a predictor, as this is also expected to be
+correlated to contact with the in-practice pharmacist. Until fairly late in the
+trial, strategies for patients to have a consult with the pharmacist mainly depended
+on patients physically in the practice being introduced (physically) to the pharmacist.
+
+### Billing change, baseline model
 
 `TotalDelta` is the difference between `Total2` (the total number of billings in
 chosen categories in the second time period) and `Total1` (the total number of billings
@@ -346,7 +534,7 @@ positively correlated with the number of physical visits in the first time perio
 
 (ref:totaldeltavisitcaption) Change in billings vs. visits to clinic - period 1 and 2
 
-```{r, 'totaldeltavisit', fig.cap = '(ref:totaldeltavisitcaption)', message=FALSE}
+```{r, 'totaldeltavisit', fig.cap = '(ref:totaldeltavisitcaption)', message=FALSE, warning=FALSE}
 total_clinic1 <- ggplot(
   active_patient_delta,
   aes(x = clinicVisit1, y = TotalDelta)
@@ -355,108 +543,81 @@ total_clinic2 <- ggplot(
   active_patient_delta,
   aes(x = clinicVisit2, y = TotalDelta)
 ) + geom_point() + geom_smooth(method=lm)
-plot_grid(total_clinic1, total_clinic2,
-          labels = c("A", "B"))
+cowplot::plot_grid(total_clinic1, total_clinic2,
+                   labels = c("A", "B"))
 ```
-
-```{r}
-summary(lm(TotalDelta ~ clinicVisit1, data = active_patient_delta))
-```
-
 
 Similarly, the total number of billings in the second time period `Total2` is expected to be
 positively correlated with the number of physical visits in the second time period
-`clinicVisit2`, and so we expect `TotalDelta` to be positively correlated with
-`clinicVisit2`. The plot `TotalDelta` vs. `clinicVisit2` shows the relationship
-is not as strong/clear as in the case of `TotalDelta` vs `clinicVisit1`, this is
-due to the presence of 'non-physical' billed contacts such as tele-health/telephone
-billed items.
+`clinicVisit2`. So it is expected `TotalDelta` will be positively correlated with
+`clinicVisit2`. Plot B of Figure \@ref(fig:totaldeltavisit) '`TotalDelta` vs. `clinicVisit2`'
+shows the relationship is not as strong/clear as in the case of `TotalDelta` vs `clinicVisit1`.
+This is most likely due to the presence of 'non-physical' billed contacts such as
+tele-health/telephone billed items.
+
+Adding `Sex` to the model is of weak benefit. Adding `DOB` (date of birth) to the
+model did not provide any additional benefit.
 
 ```{r}
+clinicVisit1_model <- lm(TotalDelta ~ clinicVisit1, data = active_patient_delta)
+clinicVisit2_model <- lm(TotalDelta ~ clinicVisit2, data = active_patient_delta)
+clinicVisitBoth_model <- lm(TotalDelta ~ clinicVisit1 + clinicVisit2, data = active_patient_delta)
+clinicVisitBothSex_model <- lm(TotalDelta ~ clinicVisit1 + clinicVisit2 + Sex, data = active_patient_delta)
+tab_model(clinicVisit1_model, clinicVisit2_model, clinicVisitBoth_model, clinicVisitBothSex_model)
 ```
 
-```{r}
-summary(lm(TotalDelta ~ clinicVisit2, data = active_patient_delta))
-```
+<br>
 
 A model predicting `TotalDelta` by combining `clinicVisit1` and `clinicVisit2`
-appears to be a reasonable model.
+appears to be a reasonable model. Residuals of this model are shown in
+Figure \@ref(fig:totaldeltavisitresidual)
 
-```{r}
-clinicVisit_model <- lm(TotalDelta ~ clinicVisit1 + clinicVisit2, data = active_patient_delta)
-summary(clinicVisit_model)
-```
+(ref:totaldeltavisitresidualcaption) Residuals of 'TotalDelta ~ clinicVisit1 + clinicVisit2' model
 
-```{r}
+```{r, 'totaldeltavisitresidual', fig.cap = '(ref:totaldeltavisitresidualcaption)', message=FALSE}
 par(mfrow = c(2,2))
-plot(clinicVisit_model)
+plot(clinicVisitBoth_model)
 ```
 
+### Medication count change, baseline model
 
-Subsequent analysis will be aimed at determining whether contact by the practice
-pharmacist influenced medications counts and billings in patients. The analysis
-will be determine whether contact by the pharmacist explains any of the 'variance'
-in the plots
+A similar model is build for changes in medication count `MedCountDelta`, depending
+on the number of physical visits in the two time periods (`clinicVisit1` and `clinicVisit2`).
 
-```{r}
-TotalGLM <- lm(
-  TotalDelta ~ DirectContact + clinicVisit1 + clinicVisit2,
-  data = active_patient_delta
-)
-summary(TotalGLM)
-```
+`clinicVisit1` and `clinicVisit2` do help predict `MedCountDelta`, but the relationship
+is not as strongs as for billings.
 
-```{r}
-StandardGLM <- lm(
-  StandardDelta ~ DirectContact + clinicVisit1 + clinicVisit2,
-  data = active_patient_delta
-)
-summary(StandardGLM)
-```
+(ref:medcountdeltavisitcaption) Change in medication count vs. visits to clinic - period 1 and 2
 
-
-```{r}
-NurseGLM <- lm(
-  NurseDelta ~ DirectContact + clinicVisit1 + clinicVisit2,
-  data = active_patient_delta
-)
-summary(NurseGLM)
-```
-```{r}
-ConferenceGLM <- lm(
-  ConferenceDelta ~ DirectContact + clinicVisit1 + clinicVisit2,
-  data = active_patient_delta
-)
-summary(ConferenceGLM)
-```
-
-```{r}
-CDMGLM <- lm(
-  CDMDelta ~ DirectContact + clinicVisit1 + clinicVisit2,
-  data = active_patient_delta
-)
-summary(CDMGLM)
-```
-
-```{r}
-DMMRGLM <- lm(
-  DMMRDelta ~ DirectContact + clinicVisit1 + clinicVisit2,
-  data = active_patient_delta
-)
-summary(DMMRGLM)
-```
-
-```{r}
-ggplot(
+```{r, 'medcountdeltavisit', fig.cap='(ref:medcountdeltavisitcaption)', message=FALSE, warning=FALSE}
+medcount_clinic1 <- ggplot(
+  active_patient_delta,
+  aes(x = clinicVisit1, y = MedCountDelta)
+) + geom_point() + geom_smooth(method=lm)
+medcount_clinic2 <- ggplot(
   active_patient_delta,
   aes(x = clinicVisit2, y = MedCountDelta)
 ) + geom_point() + geom_smooth(method=lm)
+cowplot::plot_grid(medcount_clinic1, medcount_clinic2,
+                   labels = c("A", "B"))
 ```
 
 ```{r}
-MedCountGLM <- lm(
-  MedCountDelta ~ DirectContact + clinicVisit1 + clinicVisit2,
-  data = active_patient_delta
-)
-summary(MedCountGLM)
+medcount_clinicVisit1_model <- lm(MedCountDelta ~ clinicVisit1,
+                                  data = active_patient_delta)
+medcount_clinicVisit2_model <- lm(MedCountDelta ~ clinicVisit2,
+                                  data = active_patient_delta)
+medcount_clinicVisitBoth_model <- lm(MedCountDelta ~ clinicVisit1 + clinicVisit2,
+                                     data = active_patient_delta)
+medcount_clinicVisitBothSex_model <- lm(MedCountDelta ~ clinicVisit1 + clinicVisit2 + Sex,
+                                        data = active_patient_delta)
+tab_model(medcount_clinicVisit1_model, medcount_clinicVisit2_model,
+          medcount_clinicVisitBoth_model, medcount_clinicVisitBothSex_model)
+```
+
+(ref:medndeltavisitresidualcaption) Residuals of 'MedCountDelta ~ clinicVisit1 + clinicVisit2' model
+
+```{r, 'medndeltavisitresidual', fig.cap = '(ref:medndeltavisitresidualcaption)', message=FALSE}
+par(mfrow = c(2,2))
+plot(medcount_clinicVisitBoth_model)
 ```
