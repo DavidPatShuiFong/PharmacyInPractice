@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(pipeR)
 library(dplyr)
+library(dMeasure)
 # setwd("C:/Users/david.fong/AppData/Local/Programs/GPstat/")
 # source("dist/script/R/run.R")
 ```

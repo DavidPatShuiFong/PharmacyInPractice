@@ -432,11 +432,15 @@ Contact by the pharmacist with a patient is strongly related to reduction in
 medication count (95% confidence interval -0.83 to -0.21, $p=0.001$).
 
 ```{r}
+MedCountGLM_base <- lm(
+  MedCountDelta ~ clinicVisit1 + clinicVisit2 + Sex,
+  data = active_patient_delta
+)
 MedCountGLM <- lm(
   MedCountDelta ~ DirectContact + clinicVisit1 + clinicVisit2 + Sex,
   data = active_patient_delta
 )
-tab_model(MedCountGLM)
+tab_model(MedCountGLM_base, MedCountGLM)
 ```
 
 ## Billings
@@ -448,11 +452,15 @@ billings in the selected categories (95% confidence interval 0.65 to 1.76 additi
 billings per patient, $p<0.001$).
 
 ```{r}
+TotalGLM_base <- lm(
+  TotalDelta ~ clinicVisit1 + clinicVisit2 + Sex,
+  data = active_patient_delta
+)
 TotalGLM <- lm(
   TotalDelta ~ DirectContact + clinicVisit1 + clinicVisit2 + Sex,
   data = active_patient_delta
 )
-tab_model(TotalGLM)
+tab_model(TotalGLM_base, TotalGLM)
 ```
 
 ### 'Standard' billings and contact with the pharmacist
@@ -462,11 +470,15 @@ Medicare item number billings (95% confidence interval 0.62 to 1.55 additional b
 per patient, $p<0.001$)
 
 ```{r}
+StandardGLM_base <- lm(
+  StandardDelta ~ clinicVisit1 + clinicVisit2 + Sex,
+  data = active_patient_delta
+)
 StandardGLM <- lm(
   StandardDelta ~ DirectContact + clinicVisit1 + clinicVisit2 + Sex,
   data = active_patient_delta
 )
-tab_model(StandardGLM)
+tab_model(StandardGLM_base, StandardGLM)
 ```
 
 ### Nurse provision of services related to chronic disease management
@@ -476,11 +488,15 @@ chronic disease management item number billings (95% confidence interval -0.02
 to 0.40, $p=0.081$).
 
 ```{r}
+NurseGLM_base <- lm(
+  NurseDelta ~ clinicVisit1 + clinicVisit2 + Sex,
+  data = active_patient_delta
+)
 NurseGLM <- lm(
   NurseDelta ~ DirectContact + clinicVisit1 + clinicVisit2 + Sex,
   data = active_patient_delta
 )
-tab_model(NurseGLM)
+tab_model(NurseGLM_base, NurseGLM)
 ```
 
 ### Case conference item numbers
@@ -489,11 +505,15 @@ Contact by the pharmacist with a patient is related to additional case conferenc
 item number claims (95% confidence interval 0.00 to 0.11, $p=0.045$).
 
 ```{r}
+ConferenceGLM_base <- lm(
+  ConferenceDelta ~ clinicVisit1 + clinicVisit2 + Sex,
+  data = active_patient_delta
+)
 ConferenceGLM <- lm(
   ConferenceDelta ~ DirectContact + clinicVisit1 + clinicVisit2 + Sex,
   data = active_patient_delta
 )
-tab_model(ConferenceGLM)
+tab_model(ConferenceGLM_base, ConferenceGLM)
 ```
 
 ### Domiciliary 'Home' medication reviews
@@ -502,11 +522,15 @@ Contact by a pharmacist with a patient is strongly related to home medication re
 claims (95% confidence interval 0.07 to 0.12, $p<0.001$)
 
 ```{r}
+DMMRGLM_base <- lm(
+  DMMRDelta ~ clinicVisit1 + clinicVisit2 + Sex,
+  data = active_patient_delta
+)
 DMMRGLM <- lm(
   DMMRDelta ~ DirectContact + clinicVisit1 + clinicVisit2 + Sex,
   data = active_patient_delta
 )
-tab_model(DMMRGLM)
+tab_model(DMMRGLM_base, DMMRGLM)
 ```
 
 # (APPENDIX) Appendix {-}
