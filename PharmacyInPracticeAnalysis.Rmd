@@ -8,10 +8,15 @@ abstract: "Pharmacists in general practice are expected to improve medication
   taken into consideration. In this short study, conducted during a period of
   considerable practice and societal upheaval due to a coronavirus outbreak,
   a pharmacist in practice was able to reduce the overall medication count (-0.52
-  per patient) and increase the billings ('standard' +1.1, 'nursing' +0.19,
-  'case conference' +0.05 and 'medication review' +0.1) of patients the
-  pharmacist contacted. Additional revenue per patient contacted is estimated
-  at $109."
+  per patient) and increase the billings ('standard' +0.86, 'nursing' +0.29,
+  'case conference' +0.04 and 'medication review' +0.09) of patients the
+  pharmacist contacted.
+  <br><br>
+  Additional revenue per unique patient contact is estimated
+  at $89.73. One hundred and seventy unique patients were contacted, resulting in a
+  total estimated revenue increase of $15254.10. Financial viability will
+  require measures to ensure the pharmacist has an adequate number of patient
+  contacts and measure to ensure follow-through in claimable items."
 output:
   bookdown::html_document2:
     toc: true
@@ -103,7 +108,8 @@ active_patient_billings <- active_patient_billings %>%
     InternalID = factor(InternalID),
     MBSItem = factor(MBSItem),
     ServiceDate = as.Date(ServiceDate)
-  )
+  ) %>%
+  filter(Paid > 0) # only those billings which have actually been paid
 # these are not truly numeric values, they are actually 'categoricals'
 
 pharmacist_contacts <- pharmacist_contacts %>%
@@ -429,7 +435,7 @@ not explained in the 'baseline model' described in Appendix \@ref(baselinemodel)
 ## Medication count
 
 Contact by the pharmacist with a patient is strongly related to reduction in
-medication count (95% confidence interval -0.83 to -0.21, $p=0.001$).
+medication count (95% confidence interval -0.82 to -0.21, $p=0.001$).
 
 ```{r}
 MedCountGLM_base <- lm(
@@ -448,7 +454,7 @@ tab_model(MedCountGLM_base, MedCountGLM)
 ### Total Billings and contact with pharmacist
 
 Contact by the pharmacist with a patient is strongly related to additional Medicare
-billings in the selected categories (95% confidence interval 0.65 to 1.76 additional
+billings in the selected categories (95% confidence interval 0.69 to 1.56 additional
 billings per patient, $p<0.001$).
 
 ```{r}
@@ -466,7 +472,7 @@ tab_model(TotalGLM_base, TotalGLM)
 ### 'Standard' billings and contact with the pharmacist
 
 Contact by the pharmacist with a patient is strongly related to additional 'standard'
-Medicare item number billings (95% confidence interval 0.62 to 1.55 additional billings
+Medicare item number billings (95% confidence interval 0.48 to 1.24 additional billings
 per patient, $p<0.001$)
 
 ```{r}
@@ -483,9 +489,9 @@ tab_model(StandardGLM_base, StandardGLM)
 
 ### Nurse provision of services related to chronic disease management
 
-Contact by the pharmacist with a patient is weakly related to additional nurse
-chronic disease management item number billings (95% confidence interval -0.02
-to 0.40, $p=0.081$).
+Contact by the pharmacist with a patient is strongly related to additional nurse
+chronic disease management item number billings (95% confidence interval 0.12
+to 0.46, $p=0.001$).
 
 ```{r}
 NurseGLM_base <- lm(
@@ -501,8 +507,8 @@ tab_model(NurseGLM_base, NurseGLM)
 
 ### Case conference item numbers
 
-Contact by the pharmacist with a patient is related to additional case conference
-item number claims (95% confidence interval 0.00 to 0.11, $p=0.045$).
+Contact by the pharmacist with a patient is weakly related to additional case conference
+item number claims (95% confidence interval 0.00 to 0.08, $p=0.076$).
 
 ```{r}
 ConferenceGLM_base <- lm(
@@ -519,7 +525,7 @@ tab_model(ConferenceGLM_base, ConferenceGLM)
 ### Domiciliary 'Home' medication reviews
 
 Contact by a pharmacist with a patient is strongly related to home medication review
-claims (95% confidence interval 0.07 to 0.12, $p<0.001$)
+claims (95% confidence interval 0.07 to 0.11, $p<0.001$)
 
 ```{r}
 DMMRGLM_base <- lm(
@@ -665,6 +671,9 @@ active_patient_billings_counts_specifics <- lapply(
                 StandardD = sum(MBSItem %in% c("44", "91802", "91811")),
                 StandardMH = sum(MBSItem %in% c("2713", "92115", "92127")),
                 BBIncentive = sum(MBSItem %in% c("10990")),
+                CDM721 = sum(MBSItem %in% c("721", "92024", "92068")),
+                CDM723 = sum(MBSItem %in% c("723", "92025", "92069")),
+                CDM732 = sum(MBSItem %in% c("732", "92028", "92072")),
                 Conference735 = sum(MBSItem %in% c("735")),
                 Conference739 = sum(MBSItem %in% c("739")),
                 Conference743 = sum(MBSItem %in% c("743")),
@@ -683,6 +692,9 @@ active_patient_delta_specifics <- active_patient_delta %>%
                      StandardD1 = StandardD,
                      StandardMH1 = StandardMH,
                      BBIncentive1 = BBIncentive,
+                     CDM721_1 = CDM721,
+                     CDM723_1 = CDM723,
+                     CDM732_1 = CDM732,
                      Conference735_1 = Conference735,
                      Conference739_1 = Conference739,
                      Conference743_1 = Conference743,
@@ -697,6 +709,9 @@ active_patient_delta_specifics <- active_patient_delta %>%
                      StandardD2 = StandardD,
                      StandardMH2 = StandardMH,
                      BBIncentive2 = BBIncentive,
+                     CDM721_2 = CDM721,
+                     CDM723_2 = CDM723,
+                     CDM732_2 = CDM732,
                      Conference735_2 = Conference735,
                      Conference739_2 = Conference739,
                      Conference743_2 = Conference743,
@@ -710,6 +725,9 @@ active_patient_delta_specifics <- active_patient_delta %>%
                   StandardD1 = 0, StandardD2 = 0,
                   StandardMH1 = 0, StandardMH2 = 0,
                   BBIncentive1 = 0, BBIncentive2 = 0,
+                  CDM721_1 = 0, CDM721_2 = 0,
+                  CDM723_1 = 0, CDM723_2 = 0,
+                  CDM732_1 = 0, CDM732_2 = 0,
                   Conference735_1 = 0, Confernece735_2 = 0,
                   Conference739_1 = 0, Confernece739_2 = 0,
                   Conference743_1 = 0, Confernece743_2 = 0,
@@ -721,6 +739,9 @@ active_patient_delta_specifics <- active_patient_delta %>%
          StandardCDelta = StandardC2 - StandardC1,
          StandardDDelta = StandardD2 - StandardD1,
          BBIncentiveDelta = BBIncentive2 - BBIncentive1,
+         CDM721Delta = CDM721_2 - CDM721_1,
+         CDM723Delta = CDM723_2 - CDM723_1,
+         CDM732Delta = CDM732_2 - CDM732_1,
          Conference735Delta = Conference735_2 - Conference735_1,
          Conference739Delta = Conference739_2 - Conference739_1,
          Conference743Delta = Conference743_2 - Conference743_1,
@@ -821,7 +842,7 @@ kable(tabulated_revenue, digits = 3) %>%
   kable_styling(bootstrap_options = c("striped"))
 ```
 
-Total additional revenue per patient contacted : $`r format(round(sum(tabulated_revenue$TotalValue)))`
+Total additional revenue per patient contacted : $`r format(round(sum(tabulated_revenue$TotalValue), digits = 2))`
 
 # Appendix C - Data extraction using [dMeasure/GPstat](https://github.com/DavidPatShuiFong/DailyMeasure) {#dMeasureCode}
 
@@ -853,11 +874,24 @@ active_patient <- a$list_contact_count(
 
 active_patient_ID <- active_patient %>>% dplyr::pull(InternalID)
 
-active_patient_billings <- a$db$services %>>%
-  filter(
-    InternalID %in% active_patient_ID,
-    ServiceDate >= as.Date("2017-10-01")
-  ) %>>% dplyr::collect()
+active_patient_billings <- a$emr_db$conn() %>>%
+  tbl("SERVICES") %>>%
+  select("SERVICEID", "SERVICEDATE", "INVOICEID", "MBSITEM", "PAID", "DESCRIPTION") %>>%
+  filter(INVOICEID %in% invoiceID,
+         as.Date(ServiceDate) >= as.Date("2017-10-01")) %>>%
+  collect() %>>%
+  rename(InvoiceID = INVOICEID, ServiceDate = SERVICEDATE,
+         MBSItem = MBSITEM, Paid = PAID, Description = DESCRIPTION ) %>>%
+  mutate(Description = trimws(Description),
+         ServiceDate = as.Date(ServiceDate)) %>>%
+  left_join(invoices %>>% collect(),
+            by = "InvoiceID")
+
+#active_patient_billings <- a$db$services %>>%
+#  filter(
+#    InternalID %in% active_patient_ID,
+#    ServiceDate >= as.Date("2017-10-01")
+#  ) %>>% dplyr::collect()
 
 LauraDeanVisits <- a$db$visits %>% filter(DrName == "Laura Dean")
 # InternalID, VisitType, VisitDate, UserID, DrName

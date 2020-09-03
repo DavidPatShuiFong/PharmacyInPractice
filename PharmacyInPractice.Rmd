@@ -45,11 +45,31 @@ active_patient <- a$list_contact_count(
 
 active_patient_ID <- active_patient %>>% dplyr::pull(InternalID)
 
-active_patient_billings <- a$db$services %>>%
-  filter(
-    InternalID %in% active_patient_ID,
-    ServiceDate >= as.Date("2017-10-01")
-  ) %>>% dplyr::collect()
+invoices <- a$db$invoices %>>%
+  filter(InternalID %in% active_patient_ID) %>>%
+  select(InvoiceID, InternalID)
+
+invoiceID <- invoices %>>%
+  pull(InvoiceID)
+
+active_patient_billings <- a$emr_db$conn() %>>%
+  tbl("SERVICES") %>>%
+  select("SERVICEID", "SERVICEDATE", "INVOICEID", "MBSITEM", "PAID", "DESCRIPTION") %>>%
+  filter(INVOICEID %in% invoiceID,
+         as.Date(ServiceDate) >= as.Date("2017-10-01")) %>>%
+  collect() %>>%
+  rename(InvoiceID = INVOICEID, ServiceDate = SERVICEDATE,
+         MBSItem = MBSITEM, Paid = PAID, Description = DESCRIPTION ) %>>%
+  mutate(Description = trimws(Description),
+         ServiceDate = as.Date(ServiceDate)) %>>%
+  left_join(invoices %>>% collect(),
+            by = "InvoiceID")
+
+#active_patient_billings <- a$db$services %>>%
+#  filter(
+#    InternalID %in% active_patient_ID,
+#    ServiceDate >= as.Date("2017-10-01")
+#  ) %>>% dplyr::collect()
 ```
 
 ```{r}
