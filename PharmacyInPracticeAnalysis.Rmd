@@ -6,11 +6,11 @@ abstract: "Pharmacists in general practice are expected to improve medication
   efficacy and reduce medication complications and adverse effects. In order
   for pharmacists in practice to be sustainable, practice revenue needs to be
   taken into consideration. In this short study, conducted during a period of
-  considerable practice and societal upheaval due to a coronavirus outbreak,
-  a pharmacist in practice was able to reduce the overall medication count (-0.52
-  per patient) and increase the billings ('standard' +0.86, 'nursing' +0.29,
-  'case conference' +0.04 and 'medication review' +0.09) of patients the
-  pharmacist contacted.
+  considerable practice and societal upheaval (December 2019 to August 2020) due
+  to a coronavirus outbreak, a pharmacist in practice was able to reduce the
+  overall medication count (-0.52 per patient) and increase the billings
+  ('standard' +0.86, 'nursing' +0.29, 'case conference' +0.04 and 'medication
+  review' +0.09) of patients the pharmacist contacted.
   <br><br>
   Additional revenue per unique patient contact is estimated
   at $89.73. One hundred and seventy unique patients were contacted, resulting in a
@@ -539,9 +539,47 @@ DMMRGLM <- lm(
 tab_model(DMMRGLM_base, DMMRGLM)
 ```
 
+# Summary and Conclusion
+
+During a period (December 2019 to August 2020) of considerable societal and medical
+practice upheaval due to a coronavirus outbreak, a pharmacist in practice was able
+to reduce the overall medication count (-0.52 per patient) and increase the billings
+('standard' +0.86, 'nursing' +0.29, 'case conference' +0.04 and 'medication review'
++0.09) of patients the pharmacist contacted.
+
+Additional revenue per unique patient contact is estimated at $89.73 (Appendix \@ref(revenueEstimates)).
+One hundred and seventy unique patients were contacted, resulting in a total
+estimated revenue increase of $15254.10.
+
+Although a pharmacist in practice was expected to reduce the medication count and
+increase the number of medication reviews, case conferences and perhaps other chronic
+disease management activities, the increase in other primary care team activity
+('standard' item numbers, and 'nurse' related chronic disease management items) was
+even more pronounced. This perhaps is because the pharmacist played a role
+inside a primary care team, and the pharmacist's interaction with the patient
+resulted in subsequent intentional activity with other primary care team members.
+
+Although there was significant benefit, both medical and financial, with each
+pharmacist interaction with a patient, there was an overall struggle to arrange
+such an interaction in the first place. Initial plans to create these interactions,
+ranging from asthma plans and device training, screening for non-urgent review
+of chronic disease and daily screening of patient appointment lists for patients
+with polypharmacy were severely impacted by a global pandemic of a respiratory
+illness which resulted in far fewer patients willing to come physically to the clinic,
+or stay in the clinic for longer periods of time.
+
+Only fairly late in the trial were programs successfully implemented to recruit
+patients to see the pharmacist without requiring initial physical presence in
+the clinic e.g. review of incoming and filed discharge correspondence.
+
+Success of future pharmacy in practice programs will rely not only on the great
+medical and financial value which each interaction brings, but also attention
+to arranging such interactions and improved follow-through on potential
+medication review and care planning opportunities.
+
 # (APPENDIX) Appendix {-}
 
-# Appendix A - Baseline model {#baselinemodel}
+# Baseline model {#baselinemodel}
 
 The baseline model estimates the number of billings (in select categories) a patient
 will have in the second period (after 2nd December 2020) based on the billings in
@@ -656,7 +694,7 @@ par(mfrow = c(2,2))
 plot(medcount_clinicVisitBothSex_model)
 ```
 
-# Appendix B - Detailed revenue estimates
+# Detailed revenue estimates {#revenueEstimates}
 
 ```{r message=FALSE}
 active_patient_billings_counts_specifics <- lapply(
@@ -683,7 +721,7 @@ active_patient_billings_counts_specifics <- lapply(
       ungroup()           
     }
 )
-
+C
 active_patient_delta_specifics <- active_patient_delta %>%
   left_join(active_patient_billings_counts_specifics[[1]] %>%
               rename(StandardA1 = StandardA,
@@ -844,7 +882,7 @@ kable(tabulated_revenue, digits = 3) %>%
 
 Total additional revenue per patient contacted : $`r format(round(sum(tabulated_revenue$TotalValue), digits = 2))`
 
-# Appendix C - Data extraction using [dMeasure/GPstat](https://github.com/DavidPatShuiFong/DailyMeasure) {#dMeasureCode}
+# Data extraction using [dMeasure/GPstat](https://github.com/DavidPatShuiFong/DailyMeasure) {#dMeasureCode}
 
 ```{r class.source="fold-show", eval=FALSE}
 library(pipeR)
