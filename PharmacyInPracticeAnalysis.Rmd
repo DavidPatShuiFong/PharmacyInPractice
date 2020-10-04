@@ -1,7 +1,7 @@
 ---
 title: "Pharmacy In Practice"
 author: "David Fong"
-date: "30/09/2020"
+date: "4/Oct/2020"
 abstract: "Pharmacists in general practice are expected to improve medication
   efficacy and reduce medication complications and adverse effects. In order
   for pharmacists in practice to be sustainable, practice revenue needs to be
@@ -12,22 +12,26 @@ abstract: "Pharmacists in general practice are expected to improve medication
   ('standard' +0.86, 'nursing' +0.29, 'case conference' +0.03 and 'medication
   review' +0.09) of patients the pharmacist contacted.
   <br><br>
+  Patients who were contacted by the pharmacists were more likely to have frequent
+  contacts with the practice, have more medications in their medication list and
+  more likely to have been admitted to the hospital prior to the study period. These
+  characteristics are associated with high risk of future admission to hospital.
+  <br><br>
   Additional revenue per unique patient contact is estimated
   at $90.14. One hundred and seventy unique patients were contacted, resulting in a
   total estimated revenue increase of $15323.80. Financial viability will
   require measures to ensure the pharmacist has an adequate number of patient
-  contacts and measure to ensure follow-through in claimable items.
-  <br><br>
-  Patients who were contacted by the pharmacists were more likely to have frequent
-  contacts with the practice, have more medications in their medication list and
-  more likely to have been admitted to the hospital prior to the study period. These
-  characteristics are associated with high risk of future admission to hospital."
+  contacts and measures to ensure follow-through in claimable items."
 output:
   bookdown::html_document2:
     toc: true
     toc_float: true
     toc_depth: 2
     code_folding: hide
+  bookdown::word_document2:
+    toc: true
+  bookdown::pdf_document2:
+    keep_tex: true
 ---
 
 # Introduction
@@ -35,11 +39,11 @@ output:
 General practice involves a significant, and ever increasing, number of medical
 therapeutics, often prescribed to patients with increasing age and co-morbidities.
 At the coHealth Kensington site, many patients also come from a background
-with reduced English communication ability and overall health literacy, often
-having been displaced from another country and having moved to Australia at
+with reduced English communication ability and overall health literacy. Many
+have been displaced from another country and have moved to Australia at
 a mature age. coHealth Kensington is located close to areas with a high density
-of public housing, sees patients who are homeless or at risk of homeless. The site
-also provides mental health support, and has a high proportion of patients with
+of public housing and sees patients who are homeless or at risk of homelessness.
+The site also provides mental health support. A high proportion of patients have
 mental health conditions, including low-frequency disorders such as schizophrenia.
 
 This is on the background of a local population which is ageing along with the
@@ -269,7 +273,7 @@ active_patient_medication <- active_patient_exposure %>%
   + `pharmacyContact` is `TRUE` if pharmacist contacted before that date
   + `admission` is `TRUE` is a discharge correspondence received just after that date.
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 discharge_selection <- discharge %>%
   # just the discharge notices 12 months before or 9 months after 2/Dec/2019
   filter(CorrespondenceDate >= (as.Date("2019-12-02") - months(12)) &
@@ -386,8 +390,9 @@ active_patient_billings_counts <- lapply(
 ```
 
 Each billing category is counted in the two (`1` and `2`) time periods
-  * Period 1 : the twelve months before 2019-12-02 (2nd December 2019)
-  * Period 2 : the nine months after 2019-12-2 (2nd December 2019), including 2nd December 2019
+
+* Period 1 : the twelve months before 2019-12-02 (2nd December 2019)
+* Period 2 : the nine months after 2019-12-2 (2nd December 2019), including 2nd December 2019
 
 Each billing category has a `Delta` count, calculated by subtracting 'first (`1`)'
 period from the 'second (`2`)' period count. The `Delta` count can be, and often was,
@@ -726,18 +731,18 @@ tab_model(DMMRGLM_base, DMMRGLM)
 During a period (December 2019 to August 2020) of considerable societal and medical
 practice upheaval due to a coronavirus outbreak, a pharmacist in practice was able
 to reduce the overall medication count (-0.52 per patient) and increase the billings
-('standard' +0.86, 'nursing' +0.29, 'case conference' +0.04 and 'medication review'
+('standard' +0.86, 'nursing' +0.29, 'case conference' +0.03 and 'medication review'
 +0.09) of patients the pharmacist contacted.
 
-Additional revenue per unique patient contact is estimated at $89.73 (Appendix \@ref(revenueEstimates)).
+Additional revenue per unique patient contact is estimated at $90.14 (Appendix \@ref(revenueEstimates)).
 One hundred and seventy unique patients were contacted, resulting in a total
-estimated revenue increase of $15254.10.
+estimated revenue increase of $15323.80.
 
 Although a pharmacist in practice was expected to reduce the medication count and
 increase the number of medication reviews, case conferences and perhaps other chronic
 disease management activities, the increase in other primary care team activity
 ('standard' item numbers, and 'nurse' related chronic disease management items) was
-even more pronounced. This perhaps is because the pharmacist played a role
+even more pronounced. This is perhaps because the pharmacist played a role
 inside a primary care team, and the pharmacist's interaction with the patient
 resulted in subsequent intentional activity with other primary care team members.
 
@@ -746,7 +751,7 @@ pharmacist interaction with a patient, there was an overall struggle to arrange
 such an interaction in the first place. Initial plans to create these interactions,
 ranging from asthma plans and device training, screening for non-urgent review
 of chronic disease and daily screening of patient appointment lists for patients
-with polypharmacy were severely impacted by a global pandemic of a respiratory
+with poly-pharmacy were severely impacted by a global pandemic of a respiratory
 illness which resulted in far fewer patients willing to come physically to the clinic,
 or stay in the clinic for longer periods of time.
 
@@ -903,7 +908,7 @@ active_patient_billings_counts_specifics <- lapply(
       ungroup()           
     }
 )
-C
+
 active_patient_delta_specifics <- active_patient_delta %>%
   left_join(active_patient_billings_counts_specifics[[1]] %>%
               rename(StandardA1 = StandardA,
@@ -1067,6 +1072,9 @@ Total additional revenue per patient contacted : $`r format(round(sum(tabulated_
 # Data extraction using [dMeasure/GPstat](https://github.com/DavidPatShuiFong/DailyMeasure) {#dMeasureCode}
 
 ```{r class.source="fold-show", eval=FALSE}
+## Patients contacted by pharmacist
+## uses DailyMeasure/GPstat! https://github.com/DavidPatShuiFong/DailyMeasure
+
 library(pipeR)
 library(dplyr)
 library(dMeasure)
@@ -1113,6 +1121,77 @@ active_patient_billings <- a$emr_db$conn() %>>%
 #    ServiceDate >= as.Date("2017-10-01")
 #  ) %>>% dplyr::collect()
 
-LauraDeanVisits <- a$db$visits %>% filter(DrName == "Laura Dean")
+PharmacistVisits <- a$db$visits %>% filter(DrName == "NameOfThePharmacist")
 # InternalID, VisitType, VisitDate, UserID, DrName
+```
+
+<br><br>
+
+```{r class.source="fold-show", eval=FALSE}
+## Process documents which include word 'discharge' in the Subject or Description
+## Document '.csv' created with GPstat! https://github.com/DavidPatShuiFong/DailyMeasure
+
+active_patient <- read.csv("active_patient.csv", stringsAsFactors = FALSE)
+
+d <- read.csv("KensingtonDCsummary.csv", stringsAsFactors = FALSE) %>%
+  select(InternalID, CorrespondenceDate, Category, Subject, Detail, Comment) %>%
+  mutate(CorrespondenceDate = as.Date(CorrespondenceDate)) %>%
+  filter(CorrespondenceDate >= as.Date("2019-12-02") - years(1)) %>%
+  filter(InternalID %in% active_patient$InternalID) %>% # only active patients
+  arrange(InternalID, CorrespondenceDate) %>%
+  filter(!(grepl("clinic", Category, ignore.case = TRUE))) %>% # remove various letters
+  filter(!(grepl("clinic", Subject, ignore.case = TRUE))) %>%
+  filter(!(grepl("clinic", Comment, ignore.case = TRUE))) %>%
+  filter(!(grepl("outpatient", Category, ignore.case = TRUE))) %>%
+  filter(!(grepl("outpatient", Subject, ignore.case = TRUE))) %>%
+  filter(!(grepl("outpatient", Comment, ignore.case = TRUE))) %>%
+  filter(!(grepl("OPD", Category, ignore.case = FALSE, fixed = TRUE))) %>%
+  filter(!(grepl("OPD", Subject, ignore.case = FALSE, fixed = TRUE))) %>%
+  filter(!(grepl("OPD", Comment, ignore.case = FALSE, fixed = TRUE))) %>%
+  filter(!(grepl("FTA", Category, ignore.case = FALSE, fixed = TRUE))) %>%
+  filter(!(grepl("FTA", Subject, ignore.case = FALSE, fixed = TRUE))) %>%
+  filter(!(grepl("FTA", Comment, ignore.case = FALSE, fixed = TRUE))) %>%
+  filter(!(grepl("FTA", Detail, ignore.case = FALSE, fixed = TRUE))) %>%
+  filter(!(grepl("did not attend", Subject, ignore.case = TRUE))) %>%
+  filter(!(grepl("Specialist letter", Category, ignore.case = TRUE))) %>%
+  filter(!(grepl("Specialist letter", Subject, ignore.case = TRUE))) %>%
+  filter(!(grepl("Specialist letter", Comment, ignore.case = TRUE)))
+
+d <- d %>%
+  filter(!(grepl("encounter for food challenge", Detail, ignore.case = TRUE))) %>%
+  filter(!(grepl("birth summary", Subject, ignore.case = TRUE))) %>%
+  filter(!(grepl("obstetric discharge", Subject, ignore.case = TRUE))) %>%
+  filter(!(grepl("livebirth", Comment, ignore.case = TRUE))) %>%
+  filter(!(grepl("lscs", Comment, ignore.case = TRUE))) %>%
+  filter(!(grepl("caesar", Comment, ignore.case = TRUE))) %>%
+  filter(!(grepl("caeser", Comment, ignore.case = TRUE))) %>% # wrong spelling
+  filter(!(grepl("caesar", Subject, ignore.case = TRUE))) %>%
+  filter(!(grepl("transition", Subject, ignore.case = TRUE))) %>%
+  filter(!(grepl("elective", Detail, ignore.case = TRUE))) %>%
+  filter(!(grepl("elective", Comment, ignore.case = TRUE)))
+
+  
+d <- d %>%
+  distinct(InternalID, CorrespondenceDate, .keep_all = TRUE) 
+# remvve duplicate dates
+
+
+
+d <- d %>%
+  mutate(Proximate = FALSE) 
+# is the entry 'proximate' to a recent entry?
+# in which case it is likely to be multiple correspondence referring to the same episode
+
+for (i in seq(nrow(d), 2)) {
+  # work 'backwards' with 
+  if (d[i, "InternalID"] == d[i-1, "InternalID"] &&
+      d[i, "CorrespondenceDate"] - d[i - 1, "CorrespondenceDate"] < 5) {
+    # same InternalID and less than 5 days difference
+    d[i, "Proximate"] <- TRUE
+  }
+}
+
+d <- d %>%
+  filter(!Proximate) %>%
+  select(-Proximate)
 ```
